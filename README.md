@@ -42,21 +42,6 @@ Set the settings as environment variables:
 | `KEEP_LOCAL`          | boolean | No       | `false` | Do not delete events on the CalDAV server that do not exist in the ICS file.                                 |
 | `CONFIG_PATH`         | string  | No       | -       | Path to a JSON config file defining multiple calendars (overrides the env var configuration).               |
 
-### Command-line arguments
-
-You can pass the same settings as command-line arguments instead of environment
-variables. When arguments are supplied, they take precedence over environment
-variables. Use `--remote-url` multiple times to sync multiple remote calendars.
-
-```shell
-ics_caldav_sync \
-  --remote-url https://example.com/path/to/calendar_file.ics \
-  --local-url https://example.net/caldav \
-  --local-calendar-name "My Calendar" \
-  --local-username myusername \
-  --local-password mypassword
-```
-
 ### Config file usage
 
 To sync multiple remote calendars into their own local CalDAV calendars, provide a JSON

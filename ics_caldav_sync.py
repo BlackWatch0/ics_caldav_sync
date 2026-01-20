@@ -292,56 +292,8 @@ def load_config(path: str) -> tuple[list[dict], str | None, bool]:
     return calendar_settings, sync_every, debug
 
 
-def parse_args() -> tuple[ArgumentParser, dict]:
-    parser = ArgumentParser(description="Sync ICS calendars to CalDAV.")
-    parser.add_argument(
-        "--config-path",
-        help="Path to JSON config file defining multiple calendars.",
-    )
-    parser.add_argument(
-        "--remote-url",
-        action="append",
-        help="ICS file URL. Repeat to specify multiple calendars.",
-    )
-    parser.add_argument("--local-url", help="CalDAV server URL.")
-    parser.add_argument("--local-calendar-name", help="CalDAV calendar name.")
-    parser.add_argument("--local-username", help="CalDAV username.")
-    parser.add_argument("--local-password", help="CalDAV password.")
-    parser.add_argument(
-        "--local-auth",
-        choices=("basic", "digest"),
-        help="CalDAV authentication method.",
-    )
-    parser.add_argument("--remote-username", help="ICS host username.")
-    parser.add_argument("--remote-password", help="ICS host password.")
-    parser.add_argument(
-        "--remote-auth",
-        choices=("basic", "digest"),
-        help="ICS host authentication method.",
-    )
-    parser.add_argument("--sync-every", help="Sync cadence, e.g. '30 minutes'.")
-    parser.add_argument("--timezone", help="Override events timezone.")
-    parser.add_argument("--sync-all", action="store_true", help="Sync all events.")
-    parser.add_argument(
-        "--keep-local",
-        action="store_true",
-        help="Keep local events missing from the remote.",
-    )
-    parser.add_argument("--debug", action="store_true", help="Enable debug logging.")
-    return parser, vars(parser.parse_args())
-
-
-def get_required_setting(value: str | None, env_var: str) -> str:
-    if value is not None:
-        return value
-    return getenv_or_raise(env_var)
-
-
 def main():
-    _, args = parse_args()
     config_path = os.getenv("CONFIG_PATH")
-    if args["config_path"]:
-        config_path = args["config_path"]
     if config_path:
         settings_list, sync_every, debug = load_config(config_path)
     else:
@@ -349,41 +301,29 @@ def main():
         sync_every = None
         debug = False
 
-    if debug or args["debug"] or os.getenv("DEBUG"):
+    if debug or os.getenv("DEBUG"):
         logging.basicConfig(level=logging.DEBUG)
 
     if settings_list is None:
-        remote_urls = args["remote_url"]
-        if not remote_urls:
-            remote_urls = getenv_or_raise("REMOTE_URL").split(" ")
+        remote_urls = getenv_or_raise("REMOTE_URL").split(" ")
 
         settings = {
-            "local_url": get_required_setting(args["local_url"], "LOCAL_URL"),
-            "local_calendar_name": get_required_setting(
-                args["local_calendar_name"], "LOCAL_CALENDAR_NAME"
-            ),
-            "local_username": get_required_setting(
-                args["local_username"], "LOCAL_USERNAME"
-            ),
-            "local_password": get_required_setting(
-                args["local_password"], "LOCAL_PASSWORD"
-            ),
-            "local_auth": args["local_auth"] or os.getenv("LOCAL_AUTH", "basic"),
-            "remote_username": args["remote_username"]
-            or os.getenv("REMOTE_USERNAME", ""),
-            "remote_password": args["remote_password"]
-            or os.getenv("REMOTE_PASSWORD", ""),
-            "remote_auth": args["remote_auth"] or os.getenv("REMOTE_AUTH", "basic"),
-            "sync_all": args["sync_all"] or bool(os.getenv("SYNC_ALL", False)),
-            "keep_local": args["keep_local"] or bool(os.getenv("KEEP_LOCAL", False)),
-            "timezone": args["timezone"] or os.getenv("TIMEZONE") or None,
+            "local_url": getenv_or_raise("LOCAL_URL"),
+            "local_calendar_name": getenv_or_raise("LOCAL_CALENDAR_NAME"),
+            "local_username": getenv_or_raise("LOCAL_USERNAME"),
+            "local_password": getenv_or_raise("LOCAL_PASSWORD"),
+            "local_auth": os.getenv("LOCAL_AUTH", "basic"),
+            "remote_username": os.getenv("REMOTE_USERNAME", ""),
+            "remote_password": os.getenv("REMOTE_PASSWORD", ""),
+            "remote_auth": os.getenv("REMOTE_AUTH", "basic"),
+            "sync_all": bool(os.getenv("SYNC_ALL", False)),
+            "keep_local": bool(os.getenv("KEEP_LOCAL", False)),
+            "timezone": os.getenv("TIMEZONE") or None,
         }
         settings_list = [
             {"remote_url": remote_url, **settings} for remote_url in remote_urls
         ]
-        sync_every = parse_sync_every(
-            args["sync_every"] or os.getenv("SYNC_EVERY", None)
-        )
+        sync_every = parse_sync_every(os.getenv("SYNC_EVERY", None))
 
     while True:
         if sync_every is None:
